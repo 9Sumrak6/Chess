@@ -257,7 +257,14 @@ bool Game::IsAvailableMove() {
 }
 
 void Game::GetMove(string &s, bool &who) {
-	cout << "Enter move: ";
+	string m;
+
+	if (who)
+		m = "White move. ";
+	else
+		m = "Black move. ";
+
+	cout << m << "Enter move: ";
 	getline(cin, s);
 
 	int x = s[0] - 'A' + 1;
