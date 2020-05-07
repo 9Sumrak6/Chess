@@ -24,7 +24,7 @@ const string BLACK_SPAWN = BLACK + "♟";
 const string RESET = "\e[0m";
 const string BLACK_BG1 = "\e[48;5;0m";
 const string BLACK_BG = "\e[48;5;8m";
-const string WHITE_BG = "\e[48;5;7m";
+const string WHITE_BG = "\e[48;5;15m";
 
 class Game {
 	enum FigureType {
@@ -59,11 +59,12 @@ class Game {
 
 	Move move;
 	vector<vector<Figure>> field;
+	vector<string> movesList;
 	
 	bool IsCorrect(string s);
 
 	void GetAvailableSpawnMoves(Figure figure, vector<Coord> &moves, int x, int y);
-	void GetAvailableRookMoves(Figure figure, vector<Coord> &moves, int x, int y);
+	void GetAvailableRookMoves(Figure figure, vector<Coord> &moves, int x, int y, int d, bool f);
 	void GetAvailableKnightMoves(Figure figure, vector<Coord> &moves, int x, int y);
 	void GetAvailableBishopMoves(Figure figure, vector<Coord> &moves, int x, int y);
 	void GetAvailableQueenMoves(Figure figure, vector<Coord> &moves, int x, int y);
@@ -73,8 +74,6 @@ class Game {
 	
 	void GetMove(string &s, bool &who);
 	void MakeMove();
-	
-	//Figure GetFigureByIndex(int x, int y);
 	
 	void Print();
 public:
@@ -102,7 +101,7 @@ void Game::GetAvailableSpawnMoves(Figure figure, vector<Coord> &moves, int x, in
 				moves.push_back({x - 1, y + dy});
 }
 
-void Game::GetAvailableRookMoves(Figure figure, vector<Coord> &moves, int x, int y) {
+void Game::GetAvailableRookMoves(Figure figure, vector<Coord> &moves, int x, int y, int d, bool f) {
 	int i = 1;
 
 	bool col = figure.color;
@@ -113,152 +112,111 @@ void Game::GetAvailableRookMoves(Figure figure, vector<Coord> &moves, int x, int
 	bool left = true;
 
 	while (up || down || right || left) {
-		if (up && (y + i < 9)) {
-			if (field[y + i][x].type != empty) {
-				if (field[y + i][x].color != col)
-					moves.push_back({x, y + i});
+		if (up && (y + i < 9) && (x + d < 9)) {
+			if (field[y + i][x + d].type != empty) {
+				if (field[y + i][x + d].color != col)
+					moves.push_back({x + d, y + i});
 
 				up = false;
 			}
 			else
-				moves.push_back({x, y + i});
+				moves.push_back({x + d, y + i});
 		}
 		else 
 			up = false;
 
-		if (down && (y - i > 0)) {
-			if (field[y - i][x].type != empty) {
-				if (field[y - i][x].color != col)
-					moves.push_back({x, y - i});
+		if (down && (y - i > 0) && (x - d > 0)) {
+			if (field[y - i][x - d].type != empty) {
+				if (field[y - i][x - d].color != col)
+					moves.push_back({x - d, y - i});
 
 				down = false;
 			}
 			else
-				moves.push_back({x, y - i});
+				moves.push_back({x - d, y - i});
 		}
 		else 
 			down = false;
 
-		if (right && (x + i < 9)) {
-			if (field[y][x + i].type != empty) {
-				if (field[y][x + i].color != col)
-					moves.push_back({x + i, y});
+		if (right && (x + i < 9) && (y - d > 0)) {
+			if (field[y - d][x + i].type != empty) {
+				if (field[y - d][x + i].color != col)
+					moves.push_back({x + i, y - d});
 
 				right = false;
 			}
 			else
-				moves.push_back({x + i, y});
+				moves.push_back({x + i, y - d});
 		}
 		else 
 			right = false;
 
-		if (left && (x - i > 0)) {
-			if (field[y][x - i].type != empty) {
-				if (field[y][x - i].color != col)
-					moves.push_back({x - i, y});
+		if (left && (x - i > 0) && (y + d < 9)) {
+			if (field[y + d][x - i].type != empty) {
+				if (field[y + d][x - i].color != col)
+					moves.push_back({x - i, y + d});
 
 				left = false;
 			}
 			else
-				moves.push_back({x - i, y});
+				moves.push_back({x - i, y + d});
 		}
 		else 
 			left = false;
 
+		if (f)
+			d++;
 		i++;
 	}
 }
 
 void Game::GetAvailableKnightMoves(Figure figure, vector<Coord> &moves, int x, int y) {
 	for (int dy = 1, dx = 2; dy < 3; dy++, dx--) {
-		if ((y + dy < 9) && (x + dx < 9) && (field[y + dy][x + dx]).color != figure.color)
+		if ((y + dy < 9) && (x + dx < 9) && ((field[y + dy][x + dx].color != figure.color) || (field[y + dy][x + dx].type == empty)))
 			moves.push_back({x + dx, y + dy});
 
-		if ((y + dy < 9) && (x - dx > 0) && (field[y + dy][x - dx]).color != figure.color)
+		if ((y + dy < 9) && (x - dx > 0) && ((field[y + dy][x - dx].color != figure.color) || (field[y + dy][x - dx].type == empty)))
 			moves.push_back({x - dx, y + dy});
 
-		if ((y - dy > 0) && (x + dx < 9) && (field[y - dy][x + dx]).color != figure.color)
+		if ((y - dy > 0) && (x + dx < 9) && ((field[y - dy][x + dx].color != figure.color) || (field[y - dy][x + dx].type == empty)))
 			moves.push_back({x + dx, y - dy});
 
-		if ((y - dy > 0) && (x - dx > 0) && (field[y - dy][x - dx]).color != figure.color)
+		if ((y - dy > 0) && (x - dx > 0) && ((field[y - dy][x - dx].color != figure.color ) || (field[y - dy][x - dx].type == empty)))
 			moves.push_back({x - dx, y - dy});
 	}
 }
 
 void Game::GetAvailableBishopMoves(Figure figure, vector<Coord> &moves, int x, int y) {
-	int i = 1;
-
-	bool col = figure.color;
-
-	bool upright = true;
-	bool downright = true;
-	bool upleft = true;
-	bool downleft = true;
-
-	while (upright || downright || upleft || downleft) {
-		if (upright && (y + i < 9) && (x + i < 9)) {
-			if (field[y + i][x + i].type != empty) {
-				if (field[y + i][x + i].color != col)
-					moves.push_back({x + i, y + i});
-
-				upright = false;
-			}
-			else
-				moves.push_back({x + i, y + i});
-		}
-		else 
-			upright = false;
-
-		if (downright && (y - i > 0) && (x + i < 9)) {
-			if (field[y - i][x + i].type != empty) {
-				if (field[y - i][x + i].color != col)
-					moves.push_back({x + i, y - i});
-
-				downright = false;
-			}
-			else
-				moves.push_back({x + i, y - i});
-		}
-		else 
-			downright = false;
-
-		if (upleft && (x - i > 0) && (y + i < 9)) {
-			if (field[y + i][x - i].type != empty) {
-				if (field[y + i][x - i].color != col)
-					moves.push_back({x - i, y + i});
-
-				upleft = false;
-			}
-			else
-				moves.push_back({x - i, y + i});
-		}
-		else 
-			upleft = false;
-
-		if (downleft && (x - i > 0) && (y - i > 0)) {
-			if (field[y - i][x - i].type != empty) {
-				if (field[y - i][x - i].color != col)
-					moves.push_back({x - i, y - i});
-
-				downleft = false;
-			}
-			else
-				moves.push_back({x - i, y - i});
-		}
-		else 
-			downleft = false;
-
-		i++;
-	}
+	GetAvailableRookMoves(figure, moves, x, y, 1, true);
 }
 
 void Game::GetAvailableQueenMoves(Figure figure, vector<Coord> &moves, int x, int y) {
-	GetAvailableRookMoves(figure, moves, x, y);
+	GetAvailableRookMoves(figure, moves, x, y, 0, false);
 	GetAvailableBishopMoves(figure, moves, x, y);
 }
 
 void Game::GetAvailableKingMoves(Figure figure, vector<Coord> &moves, int x, int y) {
-	moves.push_back({x + 1, y + 1});
+	for (int i = 0; i < 3; i++) {
+		if ((x + i - 1 == 9) || (x + i - 1 == 0))
+			continue;
+
+		if ((y + 1 < 9) && ((field[y + 1][x + i - 1].color != figure.color) || (field[y + 1][x - i - 1].type == empty)))
+			moves.push_back({x + i - 1, y + 1});
+		if ((field[y][x + i - 1].color != figure.color) || (field[y][x + i - 1].type == empty))
+			moves.push_back({x + i - 1, y});
+		if ((y - 1 > 0) && ((field[y - 1][x + i - 1].color != figure.color) || (field[y - 1][x - i - 1].type == empty)))
+			moves.push_back({x + i - 1, y - 1});
+	}
+
+	if (!figure.motion) {
+		if (!field[y][8].motion)
+			if (field[y][x + 1].type == empty && field[y][x + 2].type == empty)
+				moves.push_back({x + 2, y});
+
+		if (!field[y][1].motion)
+			if (field[y][x - 1].type == empty && field[y][x - 2].type == empty && field[y][x - 3].type == empty)
+				moves.push_back({x - 2, y});
+	}
 }
 
 vector<Game::Coord> Game::GetAvailableMoves(Figure figure, int x, int y) {
@@ -269,7 +227,7 @@ vector<Game::Coord> Game::GetAvailableMoves(Figure figure, int x, int y) {
 			GetAvailableSpawnMoves(figure, moves, x, y);
 			break;
 		case rook:
-			GetAvailableRookMoves(figure, moves, x, y);
+			GetAvailableRookMoves(figure, moves, x, y, 0, false);
 			break;
 		case knight:
 			GetAvailableKnightMoves(figure, moves, x, y);
@@ -309,25 +267,70 @@ void Game::GetMove(string &s, bool &who) {
 
 	move = {{x, y}, field[y][x].color, {x1, y1}, field[y1][x1].color};
 
-	while (/*s.length() != 5 || !IsCorrect(s) || !IsAvailableMove() || */(field[y][x].color != who)) {
+	while (s.length() != 5 || !IsCorrect(s) || !IsAvailableMove() || (field[y][x].color != who)) {
 		cout << "Enter row again: ";
 		getline(cin, s);
 
-		int x = s[0] - 'A' + 1;
-		int y = s[1] - '0';
-		int x1 = s[3] - 'A' + 1;
-		int y1 = s[4] - '0';
+		x = s[0] - 'A' + 1;
+		y = s[1] - '0';
+		x1 = s[3] - 'A' + 1;
+		y1 = s[4] - '0';
 
 		move = {{x, y}, field[y][x].color, {x1, y1}, field[y1][x1].color};
 	}
 
-	//who = !who;
+	movesList.push_back(s);
+
+	who = !who;
 }
 
 void Game::MakeMove() {
-	field[move.c1.y][move.c1.x].motion = true;
+	if (!field[move.c1.y][move.c1.x].motion)
+		field[move.c1.y][move.c1.x].motion = true;
+
+	if ((field[move.c1.y][move.c1.x].type == spawn) && (move.c2.y == 8)) {
+		string s;
+		string value = field[move.c1.y][move.c1.x].color ? WHITE : BLACK;
+
+		cout << "Choose the figure that the spawn will turn into (queen, rook, knight or bishop): ";
+		cin >> s;
+
+		while (s != "rook" && s != "knight" && s != "bishop" && s != "queen") {
+			cout << "Choose the figure that the spawn will turn into again: ";
+			cin >> s;
+		}
+		
+		if (s == "rook"){
+			field[move.c1.y][move.c1.x].type = rook;
+			field[move.c1.y][move.c1.x].value = value + "♜";
+		}
+		else if (s == "knight") {
+			field[move.c1.y][move.c1.x].type = knight;
+			field[move.c1.y][move.c1.x].value = value + "♞";
+		}
+		else if (s == "bishop"){
+			field[move.c1.y][move.c1.x].type = bishop;
+			field[move.c1.y][move.c1.x].value = value + "♝";
+		}
+		else if (s == "queen"){
+			field[move.c1.y][move.c1.x].type = queen;
+			field[move.c1.y][move.c1.x].value = value + "♛";
+		}
+	}
+
+	if (field[move.c1.y][move.c1.x].type == king && abs(move.c1.x - move.c2.x) == 2) {
+		if (move.c2.x > move.c1.x) {
+			field[move.c1.y][6] = field[move.c1.y][8];
+			field[move.c1.y][8] = {empty, " ", false, true};
+		}
+		else {
+			field[move.c1.y][4] = field[move.c1.y][8];
+			field[move.c1.y][1] = {empty, " ", false, true};
+		}
+	}
+
 	field[move.c2.y][move.c2.x] = field[move.c1.y][move.c1.x];
-	field[move.c1.y][move.c1.x] = {empty, " ", false, false};
+	field[move.c1.y][move.c1.x] = {empty, " ", false, true};
 }
 
 void Game::Print(){
@@ -386,6 +389,7 @@ void Game::Play() {
 	string s;
 	bool who = true;
 
+	system("clear");
 	Print();
 
 	while(true){
