@@ -1,2 +1,2 @@
 # Chess
-making chess fo Linux
+make chess for two players on Linux
