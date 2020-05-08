@@ -25,6 +25,7 @@ const string RESET = "\e[0m";
 const string BLACK_BG1 = "\e[48;5;0m";
 const string BLACK_BG = "\e[48;5;8m";
 const string WHITE_BG = "\e[48;5;15m";
+const string BLACK_MOVE = "\e[38;5;0m";
 
 class Game {
 	enum FigureType {
@@ -63,6 +64,8 @@ class Game {
 	
 	bool IsCorrect(string s);
 
+	void IsCheck();
+
 	void GetAvailableSpawnMoves(Figure figure, vector<Coord> &moves, int x, int y);
 	void GetAvailableRookMoves(Figure figure, vector<Coord> &moves, int x, int y, int d, bool f);
 	void GetAvailableKnightMoves(Figure figure, vector<Coord> &moves, int x, int y);
@@ -83,6 +86,20 @@ public:
 
 bool Game::IsCorrect(string s) {
 	return s[0] <= 'H' && s[0] >= 'A' && s[1] < '9' && s[1] > '0' && s[3] <= 'H' && s[3] >= 'A' && s[4] < '9' && s[4] > '0';
+}
+
+void Game::IsCheck() {
+	if (field[move.c2.y][move.c2.x].type != king) {
+		vector<Coord> check = GetAvailableMoves(field[move.c2.y][move.c2.x], move.c2.x, move.c2.y);
+
+		for (int i = 0; i < check.size(); i++) {
+			if ((field[check[i].y][check[i].x].type == king) && (field[check[i].y][check[i].x].color != field[move.c2.y][move.c2.x].color))
+				if (field[check[i].y][check[i].x].color)
+					cout << WHITE << "Check!" << RESET << endl;
+				else
+					cout << BLACK_MOVE << "Check!" << RESET << endl;
+		}
+	}
 }
 
 void Game::GetAvailableSpawnMoves(Figure figure, vector<Coord> &moves, int x, int y) {
@@ -258,25 +275,22 @@ bool Game::IsAvailableMove() {
 
 void Game::GetMove(string &s, bool &who) {
 	string m;
+	int x, y, x1, y1;
+	bool need = true;
 
 	if (who)
-		m = "White move. ";
+		m = WHITE + "White move. " + RESET;
 	else
-		m = "Black move. ";
+		m = BLACK_MOVE + "Black move. " + RESET;
 
-	cout << m << "Enter move: ";
-	getline(cin, s);
-
-	int x = s[0] - 'A' + 1;
-	int y = s[1] - '0';
-	int x1 = s[3] - 'A' + 1;
-	int y1 = s[4] - '0';
-
-	move = {{x, y}, field[y][x].color, {x1, y1}, field[y1][x1].color};
-
-	while (s.length() != 5 || !IsCorrect(s) || !IsAvailableMove() || (field[y][x].color != who)) {
-		cout << "Enter row again: ";
+	while (need) {
+		cout << m << "Enter move: ";
 		getline(cin, s);
+
+		while ((s.length() != 5) || !IsCorrect(s)) {
+			cout << m << "Enter row again: ";
+			getline(cin, s);
+		}
 
 		x = s[0] - 'A' + 1;
 		y = s[1] - '0';
@@ -284,6 +298,9 @@ void Game::GetMove(string &s, bool &who) {
 		y1 = s[4] - '0';
 
 		move = {{x, y}, field[y][x].color, {x1, y1}, field[y1][x1].color};
+
+		if (IsAvailableMove() && (field[y][x].color == who))
+			need = false;
 	}
 
 	movesList.push_back(s);
@@ -398,11 +415,17 @@ void Game::Play() {
 
 	system("clear");
 	Print();
+	cout << "If you want to finish the game, enter: end" << endl;
+	GetMove(s, who);
 
-	while(true){
-		GetMove(s, who);
+	while(s != "end"){
 		MakeMove();
 		system("clear");
 		Print();
+		IsCheck();
+		GetMove(s, who);
 	}
+
+	for (int i = 0; i < movesList.size(); i++) 
+		cout << movesList[i] << endl;
 }
